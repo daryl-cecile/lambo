@@ -10,7 +10,8 @@ export enum LSource {
 }
 
 export interface IServerlessHandler<SourceEvent, HandlerResult> {
-    (event:SourceEvent, context:Context, callback:Callback<HandlerResult>):void|Promise<HandlerResult>
+    (event:SourceEvent, context:Context):Promise<HandlerResult>
+    (event:SourceEvent, context:Context, callback:Callback<HandlerResult>):void
 }
 
 export interface ILRequest {
@@ -59,6 +60,10 @@ class LResponse implements ILResponse {
         }
     }
 
+    get isSent() { 
+        return this._internal_sent;
+     }
+
     sendBody(content?: any): void {
         this._internal_response.body = content;
         return this.end();
@@ -83,7 +88,7 @@ class LResponse implements ILResponse {
 }
 
 export interface ILRouteHandler {
-    (request: ILRequest, response: ILResponse, next: ILNextFunction):Promise<void>
+    (request: ILRequest, response: ILResponse, next: ILNextFunction):Promise<any>
 }
 
 export class LamboRouter {
@@ -117,8 +122,9 @@ export class LamboRouter {
 }
 
 type BaseRequest = APIGatewayProxyEvent | ALBEvent;
+type BaseResult = APIGatewayProxyResult | ALBResult;
 
-export class Lambo<E extends BaseRequest, R> {
+export class Lambo<E extends BaseRequest, R extends BaseResult> {
     public readonly router:LamboRouter = new LamboRouter("");
 
     protected constructor (protected source:LSource){}
@@ -130,7 +136,7 @@ export class Lambo<E extends BaseRequest, R> {
     }
 
     get handler(): IServerlessHandler<E, R>{
-        return ((event: E, context: Context, cb: any) => {
+        return (async (event: E, context: Context) => {
             let request:ILRequest = {
                 headers: Utils.unpackToMap(event.headers),
                 path: "path" in event.requestContext ? event.requestContext.path : event.path,
@@ -142,10 +148,44 @@ export class Lambo<E extends BaseRequest, R> {
 
             let responseObj = new LResponse();
 
+            let routeHandlers = Utils.consolidateRoutesFromRouter(request.path, this.router);
+
+            let exit = false;
+
+            for (let handler of routeHandlers){
+
+                if (exit) break;
+
+                await new Promise<void>(async resolve => {
+                    let resolved = false;
+                    let output = await handler(request, responseObj, ()=>{
+                        resolve();
+                        resolved = true;
+                    });
+                    if (resolved) return;
+                    if (!responseObj.isSent && output !== undefined){
+                        if (typeof output === "string" || output instanceof String){
+                            responseObj.sendBody(output);
+                        }
+                        else {
+                            responseObj.sendJson(output);
+                        }
+                        exit = true;
+                        resolve();
+                        return;
+                    }
+                    if (responseObj.isSent) {
+                        resolve();
+                        exit = true;
+                    }
+                });
+
+            }
+
             // RUN HANDLERS
 
-            cb(responseObj.response);
-        })
+            return responseObj.response as unknown as R
+        });
     }
 }
 
@@ -159,6 +199,20 @@ namespace Utils {
             headerMap.set(name, value);
         });
         return headerMap;
+    }
+
+    export function consolidateRoutesFromRouter(path:string, router:LamboRouter, collection:Array<ILRouteHandler>=[]){
+        if (!path.startsWith(router.path)) return collection;
+
+        if (router.handler !== undefined) collection.push(router.handler);
+
+        if (!router.routes || router.routes.length === 0) return collection;
+
+        let newPath = path.substring(router.path.length);
+        router.routes.forEach(route => {
+            consolidateRoutesFromRouter(newPath, route, collection);
+        });
+        return collection;
     }
 
 }
