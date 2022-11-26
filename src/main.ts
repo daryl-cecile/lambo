@@ -175,8 +175,8 @@ export class Lambo<E extends BaseRequest, R extends BaseResult> {
                         return;
                     }
                     if (responseObj.isSent) {
-                        resolve();
                         exit = true;
+                        resolve();
                     }
                 });
 

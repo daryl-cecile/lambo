@@ -1,0 +1,11 @@
+{
+  "name": "lambo",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/daryl-cecile/lambo",
+  "author": "Daryl Cecile <6310278+daryl-cecile@users.noreply.github.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@types/aws-lambda": "^8.10.109"
+  }
+}
