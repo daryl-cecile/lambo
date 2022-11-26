@@ -4,14 +4,15 @@ const app = Lambo.CreateApp(LSource.ALB);
 
 app.router.get('/', async (req, res, next) => {
     // this will capture when URL path is /
-    
+    res.sendJson({name:'bob'});
+    next('/admin/dashboard');
 });
 
 const adminRouter = new LamboRouter('/admin');
 
 adminRouter.get('/dashboard', async (req, res, next) => {
     // this will capture when URL path is /admin/dashboard
-    
+
 });
 
 app.router.addSubRouter(adminRouter);
