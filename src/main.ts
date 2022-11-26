@@ -148,7 +148,7 @@ export class Lambo<E extends BaseRequest, R extends BaseResult> {
 
             let responseObj = new LResponse();
 
-            let routeHandlers = Utils.consolidateRoutesFromRouter(request.path, this.router);
+            let routeHandlers = Utils.consolidateRoutesFromRouter(request.path, request.method, this.router);
 
             let exit = false;
 
@@ -201,10 +201,10 @@ namespace Utils {
         return headerMap;
     }
 
-    export function consolidateRoutesFromRouter(path:string, router:LamboRouter, collection:Array<ILRouteHandler>=[]){
+    export function consolidateRoutesFromRouter(path:string, method:string, router:LamboRouter, collection:Array<ILRouteHandler>=[]){
         if (!path.startsWith(router.path)) return collection;
 
-        if (router.handler !== undefined && path === router.path) {
+        if (router.handler !== undefined && path === router.path && router.method === method) {
             collection.push(router.handler);
             return collection;
         }
@@ -212,8 +212,8 @@ namespace Utils {
         if (!router.routes || router.routes.length === 0) return collection;
 
         let newPath = path.substring(router.path.length);
-        router.routes.forEach(route => {
-            consolidateRoutesFromRouter(newPath, route, collection);
+        router.routes.forEach(subRoute => {
+            consolidateRoutesFromRouter(newPath, method, subRoute, collection);
         });
         return collection;
     }
