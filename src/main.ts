@@ -204,7 +204,10 @@ namespace Utils {
     export function consolidateRoutesFromRouter(path:string, router:LamboRouter, collection:Array<ILRouteHandler>=[]){
         if (!path.startsWith(router.path)) return collection;
 
-        if (router.handler !== undefined) collection.push(router.handler);
+        if (router.handler !== undefined && path === router.path) {
+            collection.push(router.handler);
+            return collection;
+        }
 
         if (!router.routes || router.routes.length === 0) return collection;
 
