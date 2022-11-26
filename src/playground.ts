@@ -11,7 +11,7 @@ const adminRouter = new LamboRouter('/admin');
 
 adminRouter.get('/dashboard', async (req, res, next) => {
     // this will capture when URL path is /admin/dashboard
-
+    
 });
 
 app.router.addSubRouter(adminRouter);

@@ -1,4 +1,4 @@
-import { ALBEvent, ALBHandler, ALBResult, APIGatewayEvent, APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult, Callback, Context } from "aws-lambda";
+import { ALBEvent, ALBResult, APIGatewayProxyEvent, APIGatewayProxyResult, Callback, Context } from "aws-lambda";
 
 export class LError extends Error {
     status: number;
@@ -14,7 +14,7 @@ export interface ServerlessHandler<SourceEvent, HandlerResult> {
 }
 
 export interface LRequest {
-
+    path: URL['pathname']
 }
 
 export interface LResponse {
@@ -68,18 +68,6 @@ export class Lambo<E, R> {
     static CreateApp(source: LSource.ApiGatewayProxy): Lambo<APIGatewayProxyEvent, APIGatewayProxyResult>;
     static CreateApp(source: LSource){
         return new Lambo(source) as unknown;
-    }
-
-    static albHandler(){
-        let L = new Lambo(LSource.ALB);
-        return L;
-    }
-
-    static apiGatewayProxyHandler(){
-        let L = new Lambo(LSource.ApiGatewayProxy);
-        throw new LError('Not yet implemented');
-        // TODO implement
-        // return L;
     }
 
     get handler(): ServerlessHandler<E, R>{
